@@ -2,5 +2,779 @@ Demonstrates Truncating, Inserting, Joins, Partitions, and Updating
 
 --Truncate table PPI_CANVAS_ENROLLMENT;
 truncate table SAPBodsPi_ProfRep_Prod.HR_Data_DC2.PPI_CANVAS_ENROLLMENT;
+
+Demonstrates Truncating, Inserting, Joins, Partitions, and Updating
+
+--Truncate table PPI_CANVAS_ENROLLMENT;
+truncate table SAPBodsPi_ProfRep_Prod.HR_Data_DC2.PPI_CANVAS_ENROLLMENT;
+--insert statement
+INSERT INTO SAPBodsPi_ProfRep_Prod.Finance_Data_DC1.PPI_VN_ASSET_MAPPING 
+COLUMNS ([Asset Code], [SPEND CATEGORIES]) Values ('CIPSDCA1','SC_10485')
+
+
+--update statement
+UPDATE SAPBodsPi_ProfRep_Prod.Finance_Data_DC1.PPI_VN_CIP_OB
+   SET [LEDGER DEBIT AMOUNT] = '712625000'
+ where [Accounting Date] = '31/12/2020' and [DEBIT AMOUNT] = '712625000'
+
+-- using cast, replace, case and joins in single statement
+select Cast(REPLACE(b.[E Number], 'e', '0') as nvarchar(6)) AS ALTERNATE_KEY,
+case when a.[ Type of employee ] in ('Full-time', 'Part-time')
+    then cast(ltrim(rtrim(replace(a.[ Contractual monthly gross salary ], ',', '') )) as decimal(12,2))
+   else cast(ltrim(rtrim(replace(a.[ Contractual base salary ], '"', '') )) as decimal(12,2)) end as SALARY
+from SAPBodsPi_ProfData_Prod.[RECON].VNM_Payroll_Dec20_VT a left join SAPBodsPi_ProfData_Prod.[RECON].[VNM_Payroll_stafflist] b
+on a.[ Employee ID ] = b.[Employee ID]
+where a.[ Type of employee ] in ('Full-time', 'Hourly','Part-time') and b.[Employee ID] is not null;
+
+--drop table statement
+drop table SAPBodsPi_ProfRep_Prod.HR_Data_DC2.PPI_CANVAS_ENROLLMENT;
+
+--copying table from one schema to another schema
+select * into SAPBodsPi_ProfRep_Prod.HR_Data_DC2.PPI_CANVAS_ENROLLMENT from SAPBodsPi_ProfRep_Prod.HR_Data_DC1.PPI_CANVAS_ENROLLMENT;
+
+--Complex SQL query for work schedule with series of the SQL steps
+--SAP START
+
+
+--Getting all the work schedules
+select distinct wsr.SCHKZ, wsr.ZEITY, wsr.MOFID, wsr.MOSID, wsr.ZMODN, wsr.BZPKT, wsr.OFFBZ, wsr.BEGDA, wsr.ENDDA, wsr.MOTPR,
+pws.WONUM, pws.TPRG1 as TPROG1, pws.TPRG2 as TPROG2, pws.TPRG3 as TPROG3, pws.TPRG4 as TPROG4, pws.TPRG5 as TPROG5, pws.TPRG6 as TPROG6, pws.TPRG7 as TPROG7,
+--Monday
+dwsmon.SOLLZ as MONSOLLZ, dwsmon.SOBEG as MONSOBEG, dwsmon.SOEND as MONSOEND, dwsmon.PAMOD as MONPAMOD,bwsmon.PABEG as MONPABEG, bwsmon.PAEND as MONPAEND, bwsmon.PDUNB as MONPDUNB, bwsmon.SEQNO as MONSEQNO,
+--Tuesday
+dwstue.SOLLZ as TUESOLLZ, dwstue.SOBEG as TUESOBEG, dwstue.SOEND as TUESOEND, dwstue.PAMOD as TUEPAMOD,bwstue.PABEG as TUEPABEG, bwstue.PAEND as TUEPAEND, bwstue.PDUNB as TUEPDUNB, bwstue.SEQNO as TUESEQNO,
+--Wednesday
+dwswed.SOLLZ as WEDSOLLZ, dwswed.SOBEG as WEDSOBEG, dwswed.SOEND as WEDSOEND, dwswed.PAMOD as WEDPAMOD,bwswed.PABEG as WEDPABEG, bwswed.PAEND as WEDPAEND, bwswed.PDUNB as WEDPDUNB, bwswed.SEQNO as WEDSEQNO,
+--Thursday
+dwsthu.SOLLZ as THUSOLLZ, dwsthu.SOBEG as THUSOBEG, dwsthu.SOEND as THUSOEND, dwsthu.PAMOD as THUPAMOD,bwsthu.PABEG as THUPABEG, bwsthu.PAEND as THUPAEND, bwsthu.PDUNB as THUPDUNB, bwsthu.SEQNO as THUSEQNO,
+--Friday
+dwsfri.SOLLZ as FRISOLLZ, dwsfri.SOBEG as FRISOBEG, dwsfri.SOEND as FRISOEND, dwsfri.PAMOD as FRIPAMOD,bwsfri.PABEG as FRIPABEG, bwsfri.PAEND as FRIPAEND, bwsfri.PDUNB as FRIPDUNB, bwsfri.SEQNO as FRISEQNO,
+--Saturday
+dwssat.SOLLZ as SATSOLLZ, dwssat.SOBEG as SATSOBEG, dwssat.SOEND as SATSOEND, dwssat.PAMOD as SATPAMOD,bwssat.PABEG as SATPABEG, bwssat.PAEND as SATPAEND, bwssat.PDUNB as SATPDUNB, bwssat.SEQNO as SATSEQNO,
+--Sunday
+dwssun.SOLLZ as SUNSOLLZ, dwssun.SOBEG as SUNSOBEG, dwssun.SOEND as SUNSOEND, dwssun.PAMOD as SUNPAMOD,bwssun.PABEG as SUNPABEG, bwssun.PAEND as SUNPAEND, bwssun.PDUNB as SUNPDUNB, bwssun.SEQNO as SUNSEQNO
+into #workschedules1
+from SAPBodsPi_ProfData_Prod.HR_Data.PPI_t508A wsr left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T551A pws on wsr.ZMODN = pws.ZMODN left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwsmon on (pws.TPRG1 = dwsmon.TPROG and pws.MOTPR = dwsmon.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwstue on (pws.TPRG2 = dwstue.TPROG and pws.MOTPR = dwstue.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwswed on (pws.TPRG3 = dwswed.TPROG and pws.MOTPR = dwswed.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwsthu on (pws.TPRG4 = dwsthu.TPROG and pws.MOTPR = dwsthu.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwsfri on (pws.TPRG5 = dwsfri.TPROG and pws.MOTPR = dwsfri.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwssat on (pws.TPRG6 = dwssat.TPROG and pws.MOTPR = dwssat.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A dwssun on (pws.TPRG7 = dwssun.TPROG and pws.MOTPR = dwssun.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwsmon on (dwsmon.PAMOD = bwsmon.PAMOD and pws.MOTPR = bwsmon.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwstue on (dwstue.PAMOD = bwstue.PAMOD and pws.MOTPR = bwstue.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwswed on (dwswed.PAMOD = bwswed.PAMOD and pws.MOTPR = bwswed.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwsthu on (dwsthu.PAMOD = bwsthu.PAMOD and pws.MOTPR = bwsthu.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwsfri on (dwsfri.PAMOD = bwsfri.PAMOD and pws.MOTPR = bwsfri.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwssat on (dwssat.PAMOD = bwssat.PAMOD and pws.MOTPR = bwssat.MOTPR) left outer join
+SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550P bwssun on (dwssun.PAMOD = bwssun.PAMOD and pws.MOTPR = bwssun.MOTPR)
+where 
+dwsmon.VARIA <> 'H'
+and dwstue.VARIA <> 'H'
+and dwswed.VARIA <> 'H'
+and dwsthu.VARIA <> 'H'
+and dwsfri.VARIA <> 'H'
+and dwssat.VARIA <> 'H'
+and dwssun.VARIA <> 'H'
+and wsr.ENDDA> cast(getdate() as date)
+and pws.ZMODN not in (select ZMODN from SAPBodsPi_ProfData_Prod.HR_Data.PPI_T551A where WONUM >2)
+order by SCHKZ;
+
+
+
+--self join worksched and raising flag
+select distinct 
+--key fields
+wk2a.SCHKZ, wk2a.ZEITY, wk2a.MOFID, wk2a. MOSID, wk2a.ZMODN, wk2a. BZPKT, wk2a.OFFBZ, wk2a.BEGDA, wk2a.ENDDA, wk2a.MOTPR,
+--week1
+ wk2a.WONUM as WEEK1,
+wk2a.TPROG1 as wk1TPROG1, wk2a.TPROG2 as wk1TPROG2, wk2a.TPROG3 as wk1TPROG3, wk2a.TPROG4 as wk1TPROG4, wk2a.TPROG5 as wk1TPROG5, wk2a.TPROG6 as wk1TPROG6, wk2a.TPROG7 as wk1TPROG7,
+--Monday
+wk2a.MONSOLLZ as wk1MONSOLLZ, wk2a.MONSOBEG as wk1MONSOBEG, wk2a.MONSOEND as wk1MONSOEND, wk2a.MONPAMOD as wk1MONPAMOD, wk2a.MONPABEG as wk1MONPABEG, wk2a.MONPAEND as wk1MONPAEND, wk2a.MONPDUNB as wk1MONPDUNB, wk2a.MONSEQNO as wk1MONSEQNO,
+--Tuesday
+wk2a.TUESOLLZ as wk1TUESOLLZ, wk2a.TUESOBEG as wk1TUESOBEG, wk2a.TUESOEND as wk1TUESOEND, wk2a.TUEPAMOD as wk1TUEPAMOD, wk2a.TUEPABEG as wk1TUEPABEG, wk2a.TUEPAEND as wk1TUEPAEND, wk2a.TUEPDUNB as wk1TUEPDUNB, wk2a.TUESEQNO as wk1TUESEQNO,
+--Wednesday
+wk2a.WEDSOLLZ as wk1WEDSOLLZ, wk2a.WEDSOBEG as wk1WEDSOBEG, wk2a.WEDSOEND as wk1WEDSOEND, wk2a.WEDPAMOD as wk1WEDPAMOD, wk2a.WEDPABEG as wk1WEDPABEG, wk2a.WEDPAEND as wk1WEDPAEND, wk2a.WEDPDUNB as wk1WEDPDUNB, wk2a.WEDSEQNO as wk1WEDSEQNO,
+--Thursday
+wk2a.THUSOLLZ as wk1THUSOLLZ, wk2a.THUSOBEG as wk1THUSOBEG, wk2a.THUSOEND as wk1THUSOEND, wk2a.THUPAMOD as wk1THUPAMOD, wk2a.THUPABEG as wk1THUPABEG, wk2a.THUPAEND as wk1THUPAEND, wk2a.THUPDUNB as wk1THUPDUNB, wk2a.THUSEQNO as wk1THUSEQNO,
+--Friday
+wk2a.FRISOLLZ as wk1FRISOLLZ, wk2a.FRISOBEG as wk1FRISOBEG, wk2a.FRISOEND as wk1FRISOEND, wk2a.FRIPAMOD as wk1FRIPAMOD, wk2a.FRIPABEG as wk1FRIPABEG, wk2a.FRIPAEND as wk1FRIPAEND, wk2a.FRIPDUNB as wk1FRIPDUNB, wk2a.FRISEQNO as wk1FRISEQNO,
+--Saturday
+wk2a.SATSOLLZ as wk1SATSOLLZ, wk2a.SATSOBEG as wk1SATSOBEG, wk2a.SATSOEND as wk1SATSOEND, wk2a.SATPAMOD as wk1SATPAMOD, wk2a.SATPABEG as wk1SATPABEG, wk2a.SATPAEND as wk1SATPAEND, wk2a.SATPDUNB as wk1SATPDUNB, wk2a.SATSEQNO as wk1SATSEQNO,
+--Sunday
+wk2a.SUNSOLLZ as wk1SUNSOLLZ, wk2a.SUNSOBEG as wk1SUNSOBEG, wk2a.SUNSOEND as wk1SUNSOEND, wk2a.SUNPAMOD as wk1SUNPAMOD, wk2a.SUNPABEG as wk1SUNPABEG, wk2a.SUNPAEND as wk1SUNPAEND, wk2a.SUNPDUNB as wk1SUNPDUNB, wk2a.SUNSEQNO as wk1SUNSEQNO,
+--week2
+wk2b.WONUM as WEEK2,
+wk2b.TPROG1 as wk2TPROG1, wk2b.TPROG2 as wk2TPROG2, wk2b.TPROG3 as wk2TPROG3, wk2b.TPROG4 as wk2TPROG4, wk2b.TPROG5 as wk2TPROG5, wk2b.TPROG6 as wk2TPROG6, wk2b.TPROG7 as wk2TPROG7,
+--Monday
+wk2b.MONSOLLZ as wk2MONSOLLZ, wk2b.MONSOBEG as wk2MONSOBEG, wk2b.MONSOEND as wk2MONSOEND, wk2b.MONPAMOD as wk2MONPAMOD, wk2b.MONPABEG as wk2MONPABEG, wk2b.MONPAEND as wk2MONPAEND, wk2b.MONPDUNB as wk2MONPDUNB, wk2b.MONSEQNO as wk2MONSEQNO,
+--Tuesday
+wk2b.TUESOLLZ as wk2TUESOLLZ, wk2b.TUESOBEG as wk2TUESOBEG, wk2b.TUESOEND as wk2TUESOEND, wk2b.TUEPAMOD as wk2TUEPAMOD, wk2b.TUEPABEG as wk2TUEPABEG, wk2b.TUEPAEND as wk2TUEPAEND, wk2b.TUEPDUNB as wk2TUEPDUNB, wk2b.TUESEQNO as wk2TUESEQNO,
+--Wednesday
+wk2b.WEDSOLLZ as wk2WEDSOLLZ, wk2b.WEDSOBEG as wk2WEDSOBEG, wk2b.WEDSOEND as wk2WEDSOEND, wk2b.WEDPAMOD as wk2wedPAMOD, wk2b.WEDPABEG as wk2wedPABEG, wk2b.WEDPAEND as wk2wedPAEND, wk2b.WEDPDUNB as wk2wedPDUNB, wk2b.WEDSEQNO as wk2WEDSEQNO,
+--Thursday
+wk2b.THUSOLLZ as wk2THUSOLLZ, wk2b.THUSOBEG as wk2THUSOBEG, wk2b.THUSOEND as wk2THUSOEND, wk2b.THUPAMOD as wk2THUPAMOD, wk2b.THUPABEG as wk2THUPABEG, wk2b.THUPAEND as wk2THUPAEND, wk2b.THUPDUNB as wk2THUPDUNB, wk2b.THUSEQNO as wk2THUSEQNO,
+--Friday
+wk2b.FRISOLLZ as wk2FRISOLLZ, wk2b.FRISOBEG as wk2FRISOBEG, wk2b.FRISOEND as wk2FRISOEND, wk2b.FRIPAMOD as wk2FRIPAMOD, wk2b.FRIPABEG as wk2FRIPABEG, wk2b.FRIPAEND as wk2FRIPAEND, wk2b.FRIPDUNB as wk2FRIPDUNB, wk2b.FRISEQNO as wk2FRISEQNO,
+--Saturday
+wk2b.SATSOLLZ as wk2SATSOLLZ, wk2b.SATSOBEG as wk2SATSOBEG, wk2b.SATSOEND as wk2SATSOEND, wk2b.SATPAMOD as wk2SATPAMOD, wk2b.SATPABEG as wk2SATPABEG, wk2b.SATPAEND as wk2SATPAEND, wk2b.SATPDUNB as wk2SATPDUNB, wk2b.SATSEQNO as wk2SATSEQNO,
+--Sunday
+wk2b.SUNSOLLZ as wk2SUNSOLLZ, wk2b.SUNSOBEG as wk2SUNSOBEG, wk2b.SUNSOEND as wk2SUNSOEND, wk2b.SUNPAMOD as wk2SUNPAMOD, wk2b.SUNPABEG as wk2SUNPABEG, wk2b.SUNPAEND as wk2SUNPAEND, wk2b.SUNPDUNB as wk2SUNPDUNB, wk2b.SUNSEQNO as wk2SUNSEQNO,
+--flag to differentiate weekly schedules
+case when (wk2a.WoNUM = 1 and wk2b.WONUM is NULL ) then '1'
+	when (wk2a.WONUM = 1 and wk2b.WONUM = 2 and wk2a.TPROG1 = wk2b.TPROG1 and wk2a.TPROG2 = wk2b.TPROG2 and 
+wk2a.TPROG3 = wk2b.TPROG3 and wk2a.TPROG4 = wk2b.TPROG4 and wk2a.TPROG5 = wk2b.TPROG5
+and wk2a.TPROG6 = wk2a.TPROG6 and wk2a.TPROG7 = wk2b.TPROG7) then '2'
+	when (wk2a.WONUM = 1 and wk2b.WONUM = 2 and (datediff(dd,wk2a.BZPKT,'2020-06-01')/7)%2=0) then '3'
+	when (wk2a.WONUM = 1 and wk2b.WONUM = 2 and ABS((datediff(dd,wk2a.BZPKT,'2020-06-01')/7)%2)=1) then '4'
+end as flag,
+--exception case
+case when wk2a.SATSOLLZ > 0.00 or wk2a.SUNSOLLZ > 0.0 or wk2b.SATSOLLZ > 0.00 or wk2b.SUNSOLLZ > 0.0 then 'Y'  
+	when wk2a.SCHKZ = 'CASUAL' then 'N' else 'N'
+end as weekendflag, 
+case when 
+--week1
+(wk2a.MONSOBEG < '08:00:00' and wk2a.MONSOBEG > '00:00:00') or 
+(wk2a.TUESOBEG < '08:00:00' and wk2a.TUESOBEG > '00:00:00') or 
+(wk2a.WEDSOBEG < '08:00:00' and wk2a.WEDSOBEG > '00:00:00') or 
+(wk2a.THUSOBEG < '08:00:00' and wk2a.THUSOBEG > '00:00:00') or 
+(wk2a.FRISOBEG < '08:00:00' and wk2a.FRISOBEG > '00:00:00') or 
+--week2
+(wk2b.MONSOBEG < '08:00:00' and wk2b.MONSOBEG > '00:00:00') or 
+(wk2b.TUESOBEG < '08:00:00' and wk2b.TUESOBEG > '00:00:00') or 
+(wk2b.WEDSOBEG < '08:00:00' and wk2b.WEDSOBEG > '00:00:00') or 
+(wk2b.THUSOBEG < '08:00:00' and wk2b.THUSOBEG > '00:00:00') or 
+(wk2b.FRISOBEG < '08:00:00' and wk2b.FRISOBEG > '00:00:00') then 'Y' else 'N'
+end as morningflag, 
+case when
+--week1
+(wk2a.MONSOEND > '18:00:00' and wk2a.MONSOEND < '23:59:59') or 
+(wk2a.TUESOBEG > '18:00:00' and wk2a.TUESOEND < '23:59:59') or 
+(wk2a.WEDSOBEG > '18:00:00' and wk2a.WEDSOEND < '23:59:59') or 
+(wk2a.THUSOBEG > '18:00:00' and wk2a.THUSOEND < '23:59:59') or 
+(wk2a.FRISOBEG > '18:00:00' and wk2a.FRISOEND < '23:59:59') or 
+--week2
+(wk2b.MONSOEND > '18:00:00' and wk2b.MONSOEND < '23:59:59') or 
+(wk2b.TUESOEND > '18:00:00' and wk2b.TUESOEND < '23:59:59') or 
+(wk2b.WEDSOEND > '18:00:00' and wk2b.WEDSOEND < '23:59:59') or 
+(wk2b.THUSOEND > '18:00:00' and wk2b.THUSOEND < '23:59:59') or 
+(wk2b.FRISOEND > '18:00:00' and wk2b.FRISOEND < '23:59:59') then 'Y' else 'N'
+end as eveningflag
+into #workschedules2
+from #workschedules1 as wk2a left outer join #workschedules1 as wk2b on (wk2a.SCHKZ = wk2b.SCHKZ and 
+wk2a.ZEITY = wk2b.ZEITY and wk2a.MOFID = wk2b.MOFID and wk2a.mosid = wk2b.MOSID and wk2a.ZMODN = wk2b.ZMODN and wk2a.WONUM = 1
+and wk2b.WONUM = 2 )
+where wk2a.WONUM = 1
+order by wk2a.schkz;
+
+
+
+
+--creating key fields SOLLZ
+Select *,
+--key field with SOLLZ
+case 
+when (flag = 1 or flag = 2) then CONCAT (wk1MONSOLLZ, '|', wk1TUESOLLZ, '|', wk1WEDSOLLZ, '|', wk1THUSOLLZ, '|', 
+wk1FRISOLLZ, '|', wk1SATSOLLZ)
+when flag = 4 then CONCAT(wk1MONSOLLZ, '|', wk1TUESOLLZ, '|', wk1WEDSOLLZ, '|', wk1THUSOLLZ, '|', wk1FRISOLLZ, '|', 
+wk1SATSOLLZ, '|', wk2MONSOLLZ, '|', wk2TUESOLLZ, '|', wk2WEDSOLLZ,'|', wk2THUSOLLZ, '|', wk2FRISOLLZ, '|', wk2SATSOLLZ)
+when flag = 3 then CONCAT(wk2MONSOLLZ, '|', wk2TUESOLLZ, '|', wk2WEDSOLLZ,'|', wk2THUSOLLZ, '|', wk2FRISOLLZ, '|', 
+wk2SATSOLLZ, '|', wk1MONSOLLZ, '|', wk1TUESOLLZ, '|', wk1WEDSOLLZ, '|', wk1THUSOLLZ, '|', wk1FRISOLLZ, '|', wk1SATSOLLZ)
+end as key1,
+--key field with start time and end time
+case
+when (flag = 1 or flag = 2) then CONCAT(cast(wk1MONSOBEG as time(0)), '-', cast(wk1MONSOEND as time(0)), '|', 
+cast(wk1TUESOBEG as time(0)), '-', cast(wk1TUESOEND as time(0)), '|', cast(wk1WEDSOBEG as time(0)), '-', 
+cast(wk1WEDSOEND as time(0)), '|', cast(wk1THUSOBEG as time(0)), '-', cast(wk1THUSOEND as time(0)), '|', 
+cast(wk1FRISOBEG as time(0)), '-', cast(wk1FRISOEND as time(0)), '|', cast(wk1SATSOBEG  as time(0)), '-',  
+cast(wk1SATSOEND as time(0)), '|', cast(wk1SUNSOBEG as time(0)), '-', cast(wk1SUNSOEND as time(0)))
+when flag = 4 then CONCAT(cast(wk1MONSOBEG as time(0)), '-', cast(wk1MONSOEND as time(0)), '|', cast(wk1TUESOBEG as time(0)), '-', 
+cast(wk1TUESOEND as time(0)), '|', cast(wk1WEDSOBEG as time(0)), '-', cast(wk1WEDSOEND as time(0)), '|', cast(wk1THUSOBEG as time(0)), '-',
+cast(wk1THUSOEND as time(0)), '|', cast(wk1FRISOBEG as time(0)), '-', cast(wk1FRISOEND as time(0)), '|', cast(wk1SATSOBEG as time(0)), '-',  
+cast(wk1SATSOEND as time(0)), '|', cast(wk1SUNSOBEG as time(0)), '-', cast(wk1SUNSOEND as time(0)), '|', cast(wk2MONSOBEG as time(0)), '-', 
+cast(wk2MONSOEND as time(0)), '|', cast(wk2TUESOBEG as time(0)), '-', cast(wk2TUESOEND as time(0)), '|', cast(wk2WEDSOBEG as time(0)), '-', 
+cast(wk2WEDSOEND as time(0)), '|', cast(wk2THUSOBEG as time(0)), '-', cast(wk2THUSOEND as time(0)), '|', cast(wk2FRISOBEG as time(0)), '-', 
+cast(wk2FRISOEND as time(0)), '|', cast(wk2SATSOBEG as time(0)), '-', cast(wk2SATSOEND as time(0)), '|', cast(wk2SUNSOBEG as time(0)), '-', 
+cast(wk2SUNSOEND as time(0)))
+when flag = 3 then CONCAT(cast(wk2MONSOBEG as time(0)), '-', cast(wk2MONSOEND as time(0)), '|', cast(wk2TUESOBEG as time(0)), '-', 
+cast(wk2TUESOEND as time(0)), '|', cast(wk2WEDSOBEG as time(0)), '-', cast(wk2WEDSOEND as time(0)), '|', cast(wk2THUSOBEG as time(0)), '-',
+cast(wk2THUSOEND as time(0)), '|', cast(wk2FRISOBEG as time(0)), '-', cast(wk2FRISOEND as time(0)), '|', cast(wk2SATSOBEG as time(0)), '-',  
+cast(wk2SATSOEND as time(0)), '|', cast(wk2SUNSOBEG as time(0)), '-', cast(wk2SUNSOEND as time(0)), '|', cast(wk1MONSOBEG as time(0)), '-', 
+cast(wk1MONSOEND as time(0)), '|', cast(wk1TUESOBEG as time(0)), '-', cast(wk1TUESOEND as time(0)), '|', cast(wk1WEDSOBEG as time(0)), '-', 
+cast(wk1WEDSOEND as time(0)), '|', cast(wk1THUSOBEG as time(0)), '-', cast(wk1THUSOEND as time(0)), '|', cast(wk1FRISOBEG as time(0)), '-', 
+cast(wk1FRISOEND as time(0)), '|', cast(wk1SATSOBEG as time(0)), '-', cast(wk1SATSOEND as time(0)), '|', cast(wk1SUNSOBEG as time(0)), '-', 
+cast(wk1SUNSOEND as time(0)))
+end as key2
+into #workschedules3
+from #workschedules2 order by SCHKZ;
+
+
+
+
+
+--List of active employees
+select a.pernr, a.begda, a.endda, a.SCHKZ, a.EMPCT, a.MOSTD, a.WOSTD, a.ARBST, a.WKWDY, a.JRSTD, a.TEILK, a.DYSCH,
+b.BTRTL, b.WERKS, b.PERSG, b.PERSK , c.MOFID 
+INTO #empsched1
+from SAPBodsPi_ProfData_Prod.HR_DATA.PPI_PA0007  a
+left join SAPBodsPi_ProfData_Prod.HR_DATA.PPI_PA0001 b on (a.pernr=b.pernr and b.begda<=a.begda and b.endda>a.begda)
+left join SAPBodsPi_Profdata_Prod.HR_DATA.PPI_V_001P_M c on (b.werks=c.werks and b.btrtl=c.btrtl)
+where
+--Limit to where employee is in migration population
+a.pernr in (select pernr from SAPBodsPi_ProfData_Prod.HR_DATA.PPI_PA0001_ACTEMPS2 where schtxt<>'RMIT EUROPE')
+--Limit to work schedules that end in the future so either current or future dated work schedules
+and a.endda>cast(getdate() as date)
+--Only look at records where an employee is Fixed-Term/Continuing/Casual
+and b.persg in ('1','2','3','4','5');
+
+
+
+
+select distinct sched.PERNR, scd3.*
+into #empsched2
+from #empsched1 as sched left join #workschedules3 as scd3  
+on (sched.SCHKZ = scd3.SCHKZ and 
+sched.MOFID = scd3.MOFID and 
+scd3.ZEITY = case when sched.persg = '5' then '1' 
+				when sched.persk in ('FS','TV') then '3' else '2' end)
+order by sched.PERNR;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--ADP START
+
+
+select distinct wsr.SCHKZ, wsr.ZEITY, wsr.MOFID, wsr.MOSID, wsr.ZMODN, wsr.BZPKT, wsr.OFFBZ, wsr.BEGDA, wsr.ENDDA, wsr.MOTPR,
+pws.WONUM, pws.TPRG1 as TPROG1, pws. TPRG2 as TPROG2, pws. TPRG3 as TPROG3, pws. TPRG4 as TPROG4, pws. TPRG5 as TPROG5,pws. TPRG6 as TPROG6, pws. TPRG7 as TPROG7,
+--Monday
+dwsmon.SOLLZ as MONSOLLZ, dwsmon.NOBEG as MONNOBEG, dwsmon.NOEND as MONNOEND, dwsmon.PAMOD as MONPAMOD,bwsmon.PABEG as MONPABEG, bwsmon.PAEND as MONPAEND, bwsmon.PDUNB as MONPDUNB, bwsmon.SEQNO as MONSEQNO,
+--Tuesday
+dwstue.SOLLZ as TUESOLLZ, dwstue.NOBEG as TUENOBEG, dwstue.NOEND as TUENOEND, dwstue.PAMOD as TUEPAMOD,bwstue.PABEG as TUEPABEG, bwstue.PAEND as TUEPAEND, bwstue.PDUNB as TUEPDUNB, bwstue.SEQNO as TUESEQNO,
+--Wednesday
+dwswed.SOLLZ as WEDSOLLZ, dwswed.NOBEG as WEDNOBEG, dwswed.NOEND as WEDNOEND, dwswed.PAMOD as WEDPAMOD,bwswed.PABEG as WEDPABEG, bwswed.PAEND as WEDPAEND, bwswed.PDUNB as WEDPDUNB, bwswed.SEQNO as WEDSEQNO,
+--Thursday
+dwsthu.SOLLZ as THUSOLLZ, dwsthu.NOBEG as THUNOBEG, dwsthu.NOEND as THUNOEND, dwsthu.PAMOD as THUPAMOD,bwsthu.PABEG as THUPABEG, bwsthu.PAEND as THUPAEND, bwsthu.PDUNB as THUPDUNB, bwsthu.SEQNO as THUSEQNO,
+--Friday
+dwsfri.SOLLZ as FRISOLLZ, dwsfri.NOBEG as FRINOBEG, dwsfri.NOEND as FRINOEND, dwsfri.PAMOD as FRIPAMOD,bwsfri.PABEG as FRIPABEG, bwsfri.PAEND as FRIPAEND, bwsfri.PDUNB as FRIPDUNB, bwsfri.SEQNO as FRISEQNO,
+--Saturday
+dwssat.SOLLZ as SATSOLLZ, dwssat.NOBEG as SATNOBEG, dwssat.NOEND as SATNOEND, dwssat.PAMOD as SATPAMOD,bwssat.PABEG as SATPABEG, bwssat.PAEND as SATPAEND, bwssat.PDUNB as SATPDUNB, bwssat.SEQNO as SATSEQNO,
+--Sunday
+dwssun.SOLLZ as SUNSOLLZ, dwssun.NOBEG as SUNNOBEG, dwssun.NOEND as SUNNOEND, dwssun.PAMOD as SUNPAMOD,bwssun.PABEG as SUNPABEG, bwssun.PAEND as SUNPAEND, bwssun.PDUNB as SUNPDUNB, bwssun.SEQNO as SUNSEQNO
+into #workschedules1adp
+from SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T508A wsr left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T551A pws on wsr.ZMODN = pws.ZMODN left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwsmon on (pws.TPRG1 = dwsmon.TPROG and pws.MOTPR = dwsmon.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwstue on (pws.TPRG2 = dwstue.TPROG and pws.MOTPR = dwstue.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwswed on (pws.TPRG3 = dwswed.TPROG and pws.MOTPR = dwswed.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwsthu on (pws.TPRG4 = dwsthu.TPROG and pws.MOTPR = dwsthu.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwsfri on (pws.TPRG5 = dwsfri.TPROG and pws.MOTPR = dwsfri.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwssat on (pws.TPRG6 = dwssat.TPROG and pws.MOTPR = dwssat.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A dwssun on (pws.TPRG7 = dwssun.TPROG and pws.MOTPR = dwssun.MOTPR) left outer join
+
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwsmon on (dwsmon.PAMOD = bwsmon.PAMOD and pws.MOTPR = bwsmon.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwstue on (dwstue.PAMOD = bwstue.PAMOD and pws.MOTPR = bwstue.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwswed on (dwswed.PAMOD = bwswed.PAMOD and pws.MOTPR = bwswed.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwsthu on (dwsthu.PAMOD = bwsthu.PAMOD and pws.MOTPR = bwsthu.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwsfri on (dwsfri.PAMOD = bwsfri.PAMOD and pws.MOTPR = bwsfri.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwssat on (dwssat.PAMOD = bwssat.PAMOD and pws.MOTPR = bwssat.MOTPR) left outer join
+SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550P bwssun on (dwssun.PAMOD = bwssun.PAMOD and pws.MOTPR = bwssun.MOTPR)
+where 
+--wsr.MOFID = '01'
+--and wsr.SCHKZ = '0049'
+dwsmon.VARIA <> 'H'
+and dwstue.VARIA <> 'H'
+and dwswed.VARIA <> 'H'
+and dwsthu.VARIA <> 'H'
+and dwsfri.VARIA <> 'H'
+and dwssat.VARIA <> 'H'
+and dwssun.VARIA <> 'H'
+and wsr.ENDDA> cast(getdate() as date)
+--and pws.ZMODN in (select ZMODN from SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T551A where WONUM = 2)
+and pws.ZMODN not in (select ZMODN from SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T551A where WONUM >2)
+order by SCHKZ;
+
+
+
+
+select distinct 
+--key fields
+wk2a.SCHKZ, wk2a.ZEITY, wk2a.MOFID, wk2a. MOSID, wk2a.ZMODN, wk2a. BZPKT, wk2a.OFFBZ, wk2a.BEGDA, wk2a.ENDDA, wk2a.MOTPR,
+--week1
+ wk2a.WONUM as WEEK1,
+wk2a.TPROG1 as wk1TPROG1, wk2a.TPROG2 as wk1TPROG2, wk2a.TPROG3 as wk1TPROG3, wk2a.TPROG4 as wk1TPROG4, wk2a.TPROG5 as wk1TPROG5, wk2a.TPROG6 as wk1TPROG6, wk2a.TPROG7 as wk1TPROG7,
+--Monday
+wk2a.MONSOLLZ as wk1MONSOLLZ, wk2a.MONNOBEG as wk1MONNOBEG, wk2a.MONNOEND as wk1MONNOEND, wk2a.MONPAMOD as wk1MONPAMOD, wk2a.MONPABEG as wk1MONPABEG, wk2a.MONPAEND as wk1MONPAEND, wk2a.MONPDUNB as wk1MONPDUNB, wk2a.MONSEQNO as wk1MONSEQNO,
+--Tuesday
+wk2a.TUESOLLZ as wk1TUESOLLZ, wk2a.TUENOBEG as wk1TUENOBEG, wk2a.TUENOEND as wk1TUENOEND, wk2a.TUEPAMOD as wk1TUEPAMOD, wk2a.TUEPABEG as wk1TUEPABEG, wk2a.TUEPAEND as wk1TUEPAEND, wk2a.TUEPDUNB as wk1TUEPDUNB, wk2a.TUESEQNO as wk1TUESEQNO,
+--Wednesday
+wk2a.WEDSOLLZ as wk1WEDSOLLZ, wk2a.WEDNOBEG as wk1WEDNOBEG, wk2a.WEDNOEND as wk1WEDNOEND, wk2a.WEDPAMOD as wk1WEDPAMOD, wk2a.WEDPABEG as wk1WEDPABEG, wk2a.WEDPAEND as wk1WEDPAEND, wk2a.WEDPDUNB as wk1WEDPDUNB, wk2a.WEDSEQNO as wk1WEDSEQNO,
+--Thursday
+wk2a.THUSOLLZ as wk1THUSOLLZ, wk2a.THUNOBEG as wk1THUNOBEG, wk2a.THUNOEND as wk1THUNOEND, wk2a.THUPAMOD as wk1THUPAMOD, wk2a.THUPABEG as wk1THUPABEG, wk2a.THUPAEND as wk1THUPAEND, wk2a.THUPDUNB as wk1THUPDUNB, wk2a.THUSEQNO as wk1THUSEQNO,
+--Friday
+wk2a.FRISOLLZ as wk1FRISOLLZ, wk2a.FRINOBEG as wk1FRINOBEG, wk2a.FRINOEND as wk1FRINOEND, wk2a.FRIPAMOD as wk1FRIPAMOD, wk2a.FRIPABEG as wk1FRIPABEG, wk2a.FRIPAEND as wk1FRIPAEND, wk2a.FRIPDUNB as wk1FRIPDUNB, wk2a.FRISEQNO as wk1FRISEQNO,
+--Saturday
+wk2a.SATSOLLZ as wk1SATSOLLZ, wk2a.SATNOBEG as wk1SATNOBEG, wk2a.SATNOEND as wk1SATNOEND, wk2a.SATPAMOD as wk1SATPAMOD, wk2a.SATPABEG as wk1SATPABEG, wk2a.SATPAEND as wk1SATPAEND, wk2a.SATPDUNB as wk1SATPDUNB, wk2a.SATSEQNO as wk1SATSEQNO,
+--Sunday
+wk2a.SUNSOLLZ as wk1SUNSOLLZ, wk2a.SUNNOBEG as wk1SUNNOBEG, wk2a.SUNNOEND as wk1SUNNOEND, wk2a.SUNPAMOD as wk1SUNPAMOD, wk2a.SUNPABEG as wk1SUNPABEG, wk2a.SUNPAEND as wk1SUNPAEND, wk2a.SUNPDUNB as wk1SUNPDUNB, wk2a.SUNSEQNO as wk1SUNSEQNO,
+--week2
+wk2b.WONUM as WEEK2,
+wk2b.TPROG1 as wk2TPROG1, wk2b.TPROG2 as wk2TPROG2, wk2b.TPROG3 as wk2TPROG3, wk2b.TPROG4 as wk2TPROG4, wk2b.TPROG5 as wk2TPROG5, wk2b.TPROG6 as wk2TPROG6, wk2b.TPROG7 as wk2TPROG7,
+--Monday
+wk2b.MONSOLLZ as wk2MONSOLLZ, wk2b.MONNOBEG as wk2MONNOBEG, wk2b.MONNOEND as wk2MONNOEND, wk2b.MONPAMOD as wk2MONPAMOD, wk2b.MONPABEG as wk2MONPABEG, wk2b.MONPAEND as wk2MONPAEND, wk2b.MONPDUNB as wk2MONPDUNB, wk2b.MONSEQNO as wk2MONSEQNO,
+--Tuesday
+wk2b.TUESOLLZ as wk2TUESOLLZ, wk2b.TUENOBEG as wk2TUENOBEG, wk2b.TUENOEND as wk2TUENOEND, wk2b.TUEPAMOD as wk2TUEPAMOD, wk2b.TUEPABEG as wk2TUEPABEG, wk2b.TUEPAEND as wk2TUEPAEND, wk2b.TUEPDUNB as wk2TUEPDUNB, wk2b.TUESEQNO as wk2TUESEQNO,
+--Wednesday
+wk2b.WEDSOLLZ as wk2WEDSOLLZ, wk2b.WEDNOBEG as wk2WEDNOBEG, wk2b.WEDNOEND as wk2WEDNOEND, wk2b.WEDPAMOD as wk2wedPAMOD, wk2b.WEDPABEG as wk2wedPABEG, wk2b.WEDPAEND as wk2wedPAEND, wk2b.WEDPDUNB as wk2wedPDUNB, wk2b.WEDSEQNO as wk2WEDSEQNO,
+--Thursday
+wk2b.THUSOLLZ as wk2THUSOLLZ, wk2b.THUNOBEG as wk2THUNOBEG, wk2b.THUNOEND as wk2THUNOEND, wk2b.THUPAMOD as wk2THUPAMOD, wk2b.THUPABEG as wk2THUPABEG, wk2b.THUPAEND as wk2THUPAEND, wk2b.THUPDUNB as wk2THUPDUNB, wk2b.THUSEQNO as wk2THUSEQNO,
+--Friday
+wk2b.FRISOLLZ as wk2FRISOLLZ, wk2b.FRINOBEG as wk2FRINOBEG, wk2b.FRINOEND as wk2FRINOEND, wk2b.FRIPAMOD as wk2FRIPAMOD, wk2b.FRIPABEG as wk2FRIPABEG, wk2b.FRIPAEND as wk2FRIPAEND, wk2b.FRIPDUNB as wk2FRIPDUNB, wk2b.FRISEQNO as wk2FRISEQNO,
+--Saturday
+wk2b.SATSOLLZ as wk2SATSOLLZ, wk2b.SATNOBEG as wk2SATNOBEG, wk2b.SATNOEND as wk2SATNOEND, wk2b.SATPAMOD as wk2SATPAMOD, wk2b.SATPABEG as wk2SATPABEG, wk2b.SATPAEND as wk2SATPAEND, wk2b.SATPDUNB as wk2SATPDUNB, wk2b.SATSEQNO as wk2SATSEQNO,
+--Sunday
+wk2b.SUNSOLLZ as wk2SUNSOLLZ, wk2b.SUNNOBEG as wk2SUNNOBEG, wk2b.SUNNOEND as wk2SUNNOEND, wk2b.SUNPAMOD as wk2SUNPAMOD, wk2b.SUNPABEG as wk2SUNPABEG, wk2b.SUNPAEND as wk2SUNPAEND, wk2b.SUNPDUNB as wk2SUNPDUNB, wk2b.SUNSEQNO as wk2SUNSEQNO,
+--flag to differentiate weekly schedules
+case
+when (wk2a.WoNUM = 1 and wk2b.WONUM is NULL ) then '1'
+when (wk2a.WONUM = 1 and wk2b.WONUM = 2 and wk2a.TPROG1 = wk2b.TPROG1 and wk2a.TPROG2 = wk2b.TPROG2 and wk2a.TPROG3 = wk2b.TPROG3 and wk2a.TPROG4 = wk2b.TPROG4 and wk2a.TPROG5 = wk2b.TPROG5
+and wk2a.TPROG6 = wk2a.TPROG6 and wk2a.TPROG7 = wk2b.TPROG7) then '2'
+when (wk2a.WONUM = 1 and wk2b.WONUM = 2 and (datediff(dd,wk2a.BZPKT,'2020-06-01')/7)%2=0) then '3'
+when (wk2a.WONUM = 1 and wk2b.WONUM = 2 and (datediff(dd,wk2a.BZPKT,'2020-06-01')/7)%2<>2) then '4'
+end as flag,
+--exception case
+case when wk2a.SATSOLLZ > 0.00 or wk2a.SUNSOLLZ > 0.0 or wk2b.SATSOLLZ > 0.00 or wk2b.SUNSOLLZ > 0.0 then 'Y'  
+	when wk2a.SCHKZ = 'CASUAL' then 'N' else 'N' 
+end as weekendflag,
+case when 
+--week1
+(wk2a.MONNOBEG < '08:00:00' and wk2a.MONNOBEG > '00:00:00') or 
+(wk2a.TUENOBEG < '08:00:00' and wk2a.TUENOBEG > '00:00:00') or 
+(wk2a.WEDNOBEG < '08:00:00' and wk2a.WEDNOBEG > '00:00:00') or 
+(wk2a.THUNOBEG < '08:00:00' and wk2a.THUNOBEG > '00:00:00') or 
+(wk2a.FRINOBEG < '08:00:00' and wk2a.FRINOBEG > '00:00:00') or 
+--week2
+(wk2b.MONNOBEG < '08:00:00' and wk2b.MONNOBEG > '00:00:00') or 
+(wk2b.TUENOBEG < '08:00:00' and wk2b.TUENOBEG > '00:00:00') or 
+(wk2b.WEDNOBEG < '08:00:00' and wk2b.WEDNOBEG > '00:00:00') or 
+(wk2b.THUNOBEG < '08:00:00' and wk2b.THUNOBEG > '00:00:00') or 
+(wk2b.FRINOBEG < '08:00:00' and wk2b.FRINOBEG > '00:00:00') then 'Y'
+else 'N' end as morningflag,
+case when
+--week1
+(wk2a.MONNOEND > '18:00:00' and wk2a.MONNOEND < '23:59:59') or 
+(wk2a.TUENOBEG > '18:00:00' and wk2a.TUENOEND < '23:59:59') or 
+(wk2a.WEDNOBEG > '18:00:00' and wk2a.WEDNOEND < '23:59:59') or 
+(wk2a.THUNOBEG > '18:00:00' and wk2a.THUNOEND < '23:59:59') or 
+(wk2a.FRINOBEG > '18:00:00' and wk2a.FRINOEND < '23:59:59') or 
+--week2
+(wk2b.MONNOEND > '18:00:00' and wk2b.MONNOEND < '23:59:59') or 
+(wk2b.TUENOEND > '18:00:00' and wk2b.TUENOEND < '23:59:59') or 
+(wk2b.WEDNOEND > '18:00:00' and wk2b.WEDNOEND < '23:59:59') or 
+(wk2b.THUNOEND > '18:00:00' and wk2b.THUNOEND < '23:59:59') or 
+(wk2b.FRINOEND > '18:00:00' and wk2b.FRINOEND < '23:59:59') then 'Y'
+else 'N'end as eveningflag
+into #workschedules2adp
+from #workschedules1adp as wk2a left outer join #workschedules1adp as wk2b on (wk2a.SCHKZ = wk2b.SCHKZ and 
+wk2a.ZEITY = wk2b.ZEITY and wk2a.MOFID = wk2b.MOFID and wk2a.mosid = wk2b.MOSID and wk2a.ZMODN = wk2b.ZMODN and wk2a.WONUM = 1
+and wk2b.WONUM = 2 )
+where wk2a.WONUM = 1
+order by wk2a.schkz;
+
+
+
+
+Select *,
+--key field with SOLLZ
+case 
+when (flag = 1 or flag = 2) then CONCAT(cast(wk1MONSOLLZ as decimal(18,2)), '|', cast(wk1TUESOLLZ as decimal(18,2)), '|',
+cast(wk1WEDSOLLZ  as decimal(18,2)), '|', cast(wk1THUSOLLZ as decimal(18,2)), '|', cast(wk1FRISOLLZ as decimal(18,2)), '|', 
+cast(wk1SATSOLLZ as decimal(18,2)))
+when (flag = 3 or flag = 4) then CONCAT(cast(wk1MONSOLLZ as decimal(18,2)), '|', cast(wk1TUESOLLZ as decimal(18,2)), '|', 
+cast(wk1WEDSOLLZ as decimal(18,2)), '|', cast(wk1THUSOLLZ as decimal(18,2)), '|', cast(wk1FRISOLLZ as decimal(18,2)), '|', 
+cast(wk1SATSOLLZ as decimal(18,2)), '|', cast(wk2MONSOLLZ as decimal(18,2)), '|', cast(wk2TUESOLLZ as decimal(18,2)), '|', 
+cast(wk2WEDSOLLZ as decimal(18,2)), '|', cast(wk2THUSOLLZ as decimal(18,2)), '|', cast(wk2FRISOLLZ as decimal(18,2)), '|', 
+cast(wk2SATSOLLZ as decimal(18,2)))
+end as key1,
+--key field with start time and end time
+case
+when (flag = 1 or flag = 2) then CONCAT(wk1MONNOBEG, '-', wk1MONNOEND, '|', wk1TUENOBEG, '-', wk1TUENOEND, '|', 
+wk1WEDNOBEG, '-', wk1WEDNOEND, '|', wk1THUNOBEG, '-', wk1THUNOEND, '|', wk1FRINOBEG, '-', wk1FRINOEND, '|', wk1SATNOBEG, '-',  
+wk1SATNOEND, '|', wk1SUNNOBEG, '-', wk1SUNNOEND)
+when (flag = 3 or flag = 4) then CONCAT(wk1MONNOBEG, '-', wk1MONNOEND, '|', wk1TUENOBEG, '-', wk1TUENOEND, '|', wk1WEDNOBEG, '-', 
+wk1WEDNOEND, '|', wk1THUNOBEG, '-', wk1THUNOEND, '|', wk1FRINOBEG, '-', wk1FRINOEND, '|', wk1SATNOBEG, '-', wk1SATNOEND, '|', 
+wk1SUNNOBEG, '-', wk1SUNNOEND, '|', wk2MONNOBEG, '-', wk2MONNOEND, '|', wk2TUENOBEG, '-', wk2TUENOEND, '|', wk2WEDNOBEG, '-', 
+wk2WEDNOEND, '|', wk2THUNOBEG, '-', wk2THUNOEND, '|', wk2FRINOBEG, '-', wk2FRINOEND, '|', wk2SATNOBEG, '-', wk2SATNOEND, '|', 
+wk2SUNNOBEG, '-', wk2SUNNOEND)
+end as key2
+into #workschedules3adp
+from #workschedules2adp order by SCHKZ;
+
+
+
+
+--START T550A MAPPING
+
+--SAP
+select sap.MOTPR, sap.TPROG, SAP.SEQNO, SAP.BEGDA, SAP.ENDDA, SAP.SOBEG, SAP.SOEND, SAP.SOLLZ, 
+SAP.SOLLZ as SAPkey1,
+concat(cast(SOBEG as time), '-', cast(SOEND as time)) as SAPKEY2,
+case when (SOBEG < '08:00:00' and SOBEG > '00:00:00') then 'Y' else 'N' end as sapmorningflag,
+case when (SOEND > '18:00:00' and SOEND < '23:59:59') then 'Y' else 'N'
+end as sapeveningflag
+into #SAPT550A
+from SAPBodsPi_ProfData_Prod.HR_Data.PPI_T550A as SAP
+where sap.ENDDA> cast(getdate() as date) AND VARIA<>'H';
+
+--ADP
+select ADP.MOTPR, ADP.TPROG, ADP.SEQNO, ADP.BEGDA, ADP.ENDDA, ADP.NOBEG, ADP.NOEND, ADP.SOLLZ,
+ADP.SOLLZ as ADPkey1,
+concat(cast(NOBEG as time), '-', cast(NOEND as time)) as ADPKEY2,
+case when (NOBEG < '08:00:00' and NOBEG > '00:00:00') then 'Y' else 'N' end as ADPmorningflag,
+case when (NOEND > '18:00:00' and NOEND < '23:59:59') then 'Y' else 'N' end as ADPeveningflag
+into #ADPT550A
+from SAPBODSPI_PROFDATA_PROD.HR_DATA.UAT_T550A AS ADP
+where ADP.TPROG <> 'OFF';
+
+--UNION
+select * into #TPROGMAPPED1 
+from (
+	SELECT #SAPT550A.MOTPR as SAPMOTPR, #SAPT550A.TPROG as SAPTPROG, #SAPT550A.SEQNO as SAPSEQNO, #SAPT550A.BEGDA as SAPBEGDA, 
+	#SAPT550A.ENDDA as SAPENDDA, #SAPT550A.SOBEG as SAPSOBEG, #SAPT550A.SOEND as SAPSOEND, #SAPT550A.SOLLZ as SAPSOLLZ,
+	#SAPT550A.SAPkey1, #SAPT550A.SAPkey2,
+	#ADPT550A.MOTPR as ADPMOTPR, #ADPT550A.TPROG as ADPTPROG, #ADPT550A.SEQNO as ADPSEQNO, #ADPT550A.BEGDA as ADPBEGDA, 
+	#ADPT550A.ENDDA as ADPENDA, #ADPT550A.NOBEG as ADPNOBEG, #ADPT550A.NOEND as ADPNOEND, #ADPT550A.SOLLZ as ADPSOLLZ,
+	#ADPT550A.ADPkey1, #ADPT550A.ADPKEY2,'EXACT' as exactflag
+	FROM #SAPT550A INNER JOIN #ADPT550A
+	ON #SAPT550A.SAPkey2 = #ADPT550A.ADPkey2
+UNION 
+	SELECT #SAPT550A.MOTPR as SAPMOTPR, #SAPT550A.TPROG as SAPTPROG, #SAPT550A.SEQNO as SAPSEQNO, #SAPT550A.BEGDA as SAPBEGDA, 
+	#SAPT550A.ENDDA as SAPENDDA, #SAPT550A.SOBEG as SAPSOBEG, #SAPT550A.SOEND as SAPSOEND, #SAPT550A.SOLLZ as SAPSOLLZ,
+	#SAPT550A.SAPkey1, #SAPT550A.SAPkey2,
+	#ADPT550A.MOTPR as ADPMOTPR, #ADPT550A.TPROG as ADPTPROG, #ADPT550A.SEQNO as ADPSEQNO, #ADPT550A.BEGDA as ADPBEGDA, 
+	#ADPT550A.ENDDA as ADPENDA, #ADPT550A.NOBEG as ADPNOBEG, #ADPT550A.NOEND as ADPNOEND, #ADPT550A.SOLLZ as ADPSOLLZ, 
+	#ADPT550A.ADPkey1, #ADPT550A.ADPKEY2, 'NOT EXACT' as exactflag
+	FROM #SAPT550A LEFT JOIN #ADPT550A 
+	ON #SAPT550A.SAPkey1 = #ADPT550A.ADPkey1 and #SAPT550A.SAPkey2 <> #ADPT550A.ADPkey2
+	WHERE #SAPT550A.sapeveningflag = 'N' and #SAPT550A.sapmorningflag = 'N' and
+	#ADPT550A.ADPmorningflag = 'N' and #ADPT550A.ADPeveningflag = 'N' ) DRV ;
+
+select row_number() Over( Partition by saptprog order by exactflag) as RNK, *
+into #TPROGMAPPED2 
+from #TPROGMAPPED1
+order by SAPTPROG asc;
+
+--select * from #TPROGMAPPED2
+
+--END T550A MAPPING
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--ANALYSIS PART START
+
+--MAPPED
+SELECT *, ROW_NUMBER() OVER(Partition By PERNR, SCHKZ order by PERNR) as RNK
+INTO #MAPPED1
+FROM (
+	select a.PERNR, a.SCHKZ, b.SCHKZ as SCHKZ_ADP
+	from #empsched2 a left join #workschedules3adp b 
+	on a.key1=b.key1 and b.eveningflag ='N' and b.weekendflag='N' and b.morningflag='N'
+	where a.eveningflag='N' and a.morningflag='N' and a.weekendflag='N' AND B.SCHKZ<>'C5360000'
+UNION
+	select a.PERNR, a.SCHKZ, b.SCHKZ as SCHKZ_ADP
+	from #empsched2 a left join #workschedules3adp b 
+	on a.key2=b.key2 and (b.eveningflag ='Y' or b.weekendflag='Y' or b.morningflag='Y')
+	where (a.eveningflag='Y' or a.morningflag='Y' or a.weekendflag='Y' ) AND a.SCHKZ<>'CASUAL' AND b.SCHKZ<>'C5360000' 
+UNION
+	SELECT PERNR, SCHKZ, 'CASUAL' as SCHKZ_ADP FROM #empsched2 WHERE SCHKZ = 'CASUAL') DRV order by PERNR;
+
+
+select PERNR, SCHKZ, SCHKZ_ADP
+into #MAPPED2
+from #MAPPED1 where RNK=1
+order by PERNR
+
+
+
+
+
+--UNMAPPED
+SELECT * 
+INTO #UNMAPPED1
+FROM (
+select A.* from #empsched2 a
+left join #workschedules3adp b on (a.key1=b.key1 and b.eveningflag ='N' and b.weekendflag='N' and b.morningflag='N')
+where a.eveningflag='N' and a.morningflag='N' and a.weekendflag='N' AND B.SCHKZ IS NULL
+UNION
+select A.* from #empsched2 a
+left join #workschedules3adp b on (a.key2=b.key2 and (b.eveningflag ='Y' or b.weekendflag='Y' or b.morningflag='Y'))
+where (a.eveningflag='Y' or a.morningflag='Y' or a.weekendflag='Y' ) AND B.SCHKZ IS NULL
+) DRV ;
+
+
+select * 
+into #UNMAPPED2
+from #UNMAPPED1
+WHERE 
+SCHKZ<>'CASUAL'
+AND (wk1MONSEQNO=1 OR wk1MONSEQNO IS NULL) AND (wk1TUESEQNO=1 OR wk1TUESEQNO IS NULL) AND (wk1WEDSEQNO=1 OR wk1WEDSEQNO IS NULL)
+AND (wk1THUSEQNO=1 OR wk1THUSEQNO IS NULL) AND (wk1FRISEQNO=1 OR wk1FRISEQNO IS NULL) AND (wk1SATSEQNO=1 OR wk1SATSEQNO IS NULL) 
+AND (wk1SUNSEQNO=1 OR wk1SUNSEQNO IS NULL)
+AND (WK2MONSEQNO=1 OR WK2MONSEQNO IS NULL) AND (WK2TUESEQNO=1 OR WK2TUESEQNO IS NULL) AND (WK2WEDSEQNO=1 OR WK2WEDSEQNO IS NULL)
+AND (WK2THUSEQNO=1 OR WK2THUSEQNO IS NULL) AND (WK2FRISEQNO=1 OR WK2FRISEQNO IS NULL) AND (WK2SATSEQNO=1 OR WK2SATSEQNO IS NULL) 
+AND (WK2SUNSEQNO=1 OR WK2SUNSEQNO IS NULL) ;
+
+--select * from #UNMAPPED2 where flag=2
+
+--ANALYSIS PART END
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--RECOMMENDING ADPTPROGS FOR UNMAPPED SAP SCHKZ
+
+select unmap.PERNR, unmap.SCHKZ, unmap.ZEITY,unmap.MOFID, unmap.MOSID, unmap.ZMODN, unmap.BZPKT, unmap.OFFBZ, unmap.BEGDA, unmap.ENDDA, unmap.MOTPR,
+unmap.WEEK1,unmap.wk1TPROG1,unmap.wk1TPROG2,unmap.wk1TPROG3,unmap.wk1TPROG4,unmap.wk1TPROG5,unmap.wk1TPROG6,unmap.wk1TPROG7,
+unmap.wk1MONSOBEG, unmap.wk1MONSOEND, unmap.wk1MONSOLLZ,
+unmap.wk1TUESOBEG, unmap.wk1TUESOEND, unmap.wk1TUESOLLZ,
+unmap.wk1WEDSOBEG, unmap.wk1WEDSOEND, unmap.wk1WEDSOLLZ,
+unmap.wk1THUSOBEG, unmap.wk1THUSOEND, unmap.wk1THUSOLLZ,
+unmap.wk1FRISOBEG, unmap.wk1FRISOEND, unmap.wk1FRISOLLZ,
+unmap.wk1SATSOBEG, unmap.wk1SATSOEND, unmap.wk1SATSOLLZ,
+unmap.wk1SUNSOBEG, unmap.wk1SUNSOEND, unmap.wk1SUNSOLLZ,
+unmap.WEEK2,unmap.wk2TPROG1,unmap.wk2TPROG2,unmap.wk2TPROG3,unmap.wk2TPROG4,unmap.wk2TPROG5,unmap.wk2TPROG6,unmap.wk2TPROG7,
+unmap.wk2MONSOBEG, unmap.wk2MONSOEND, unmap.wk2MONSOLLZ,
+unmap.wk2TUESOBEG, unmap.wk2TUESOEND, unmap.wk2TUESOLLZ,
+unmap.wk2WEDSOBEG, unmap.wk2WEDSOEND, unmap.wk2WEDSOLLZ,
+unmap.wk2THUSOBEG, unmap.wk2THUSOEND, unmap.wk2THUSOLLZ,
+unmap.wk2FRISOBEG, unmap.wk2FRISOEND, unmap.wk2FRISOLLZ,
+unmap.wk2SATSOBEG, unmap.wk2SATSOEND, unmap.wk2SATSOLLZ,
+unmap.wk2SUNSOBEG, unmap.wk2SUNSOEND, unmap.wk2SUNSOLLZ,
+unmap.flag, unmap.weekendflag, unmap.morningflag, unmap.eveningflag, unmap.key1, unmap.key2,
+--week1
+max(case when unmap.wk1TPROG1 = map.SAPTPROG then map.adptprog 
+		when unmap.wk1TPROG1 = 'OFF' then 'OFF' 
+		when unmap.wk1TPROG1 = 'FREE' then 'FREE' else NULL end) adpwk1tprog1,
+max(case when unmap.wk1TPROG2 = map.SAPTPROG then map.adptprog 
+		when unmap.wk1TPROG2 = 'OFF' then 'OFF'
+		when unmap.wk1TPROG2 = 'FREE' then 'FREE' else NULL end) adpwk1tprog2,
+max(case when unmap.wk1TPROG3 = map.SAPTPROG then map.adptprog 
+		when unmap.wk1TPROG3 = 'OFF' then 'OFF'
+		when unmap.wk1TPROG3 = 'FREE' then 'FREE' else NULL end) adpwk1tprog3,
+max(case when unmap.wk1TPROG4 = map.SAPTPROG then map.adptprog
+		when unmap.wk1TPROG4 = 'OFF' then 'OFF'
+		when unmap.wk1TPROG4 = 'FREE' then 'FREE' else NULL end) adpwk1tprog4,
+max(case when unmap.wk1TPROG5 = map.SAPTPROG then map.adptprog
+		when unmap.wk1TPROG5 = 'OFF' then 'OFF'
+		when unmap.wk1TPROG5 = 'FREE' then 'FREE' else NULL end) adpwk1tprog5,
+max(case when unmap.wk1TPROG6 = map.SAPTPROG then map.adptprog
+		when unmap.wk1TPROG6 = 'OFF' then 'OFF'
+		when unmap.wk1TPROG6 = 'FREE' then 'FREE' else NULL end) adpwk1tprog6,
+max(case when unmap.wk1TPROG7 = map.SAPTPROG then map.adptprog
+		when unmap.wk1TPROG7 = 'OFF' then 'OFF'
+		when unmap.wk1TPROG7 = 'FREE' then 'FREE' else NULL end) adpwk1tprog7,
+--week2
+max(case when unmap.wk2TPROG1 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG1 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG1 = 'FREE' then 'FREE' else NULL end) adpwk2tprog1,
+max(case when unmap.wk2TPROG2 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG2 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG2 = 'FREE' then 'FREE' else NULL end) adpwk2tprog2,
+max(case when unmap.wk2TPROG3 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG3 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG3 = 'FREE' then 'FREE' else NULL end) adpwk2tprog3,
+max(case when unmap.wk2TPROG4 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG4 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG4 = 'FREE' then 'FREE' else NULL end) adpwk2tprog4,
+max(case when unmap.wk2TPROG5 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG5 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG5 = 'FREE' then 'FREE' else NULL end) adpwk2tprog5,
+max(case when unmap.wk2TPROG6 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG6 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG6 = 'FREE' then 'FREE' else NULL end) adpwk2tprog6,
+max(case when unmap.wk2TPROG7 = map.SAPTPROG then map.adptprog
+		when unmap.wk2TPROG7 = 'OFF' then 'OFF'
+		when unmap.wk2TPROG7 = 'FREE' then 'FREE' else NULL end) adpwk2tprog7
+into #UNMAPPED3
+from #UNMAPPED2 unmap left join #TPROGMAPPED2 map 
+on 
+--week1
+unmap.wk1TPROG1 = map.SAPTPROG or unmap.wk1TPROG2 = map.SAPTPROG or unmap.wk1TPROG3 = map.SAPTPROG
+or unmap.wk1TPROG4 = map.SAPTPROG or unmap.wk1TPROG5 = map.SAPTPROG or unmap.wk1TPROG6= map.SAPTPROG
+or unmap.wk1TPROG7 = map.SAPTPROG or unmap.wk1TPROG1 = 'OFF' or unmap.wk1TPROG2 = 'OFF' or unmap.wk1TPROG3 = 'OFF'
+or unmap.wk1TPROG4 = 'OFF' or unmap.wk1TPROG5 = 'OFF' or unmap.wk1TPROG6 = 'OFF' or unmap.wk1TPROG7 = 'OFF'  
+or unmap.wk1TPROG1 = 'FREE' or unmap.wk1TPROG2 = 'FREE' or unmap.wk1TPROG3 = 'FREE'
+or unmap.wk1TPROG4 = 'FREE' or unmap.wk1TPROG5 = 'FREE' or unmap.wk1TPROG6 = 'FREE' or unmap.wk1TPROG7 = 'FREE'
+--week2
+or unmap.wk2TPROG1 = map.SAPTPROG or unmap.wk2TPROG2 = map.SAPTPROG or unmap.wk2TPROG3 = map.SAPTPROG
+or unmap.wk2TPROG4 = map.SAPTPROG or unmap.wk2TPROG5 = map.SAPTPROG or unmap.wk2TPROG6= map.SAPTPROG
+or unmap.wk2TPROG7 = map.SAPTPROG or unmap.wk2TPROG1 = 'OFF' or unmap.wk2TPROG2 = 'OFF' or unmap.wk2TPROG3 = 'OFF'
+or unmap.wk2TPROG4 = 'OFF' or unmap.wk2TPROG5 = 'OFF' or unmap.wk2TPROG6 = 'OFF'  or unmap.wk2TPROG7 = 'OFF'
+or unmap.wk2TPROG1 = 'FREE' or unmap.wk2TPROG2 = 'FREE' or unmap.wk2TPROG3 = 'FREE'
+or unmap.wk2TPROG4 = 'FREE' or unmap.wk2TPROG5 = 'FREE' or unmap.wk2TPROG6 = 'FREE'  or unmap.wk2TPROG7 = 'FREE'
+where map.RNK = 1
+group by unmap.PERNR, unmap.SCHKZ, unmap.ZEITY,unmap.MOFID, unmap.MOSID, unmap.ZMODN, unmap.BZPKT, unmap.OFFBZ, unmap.BEGDA, unmap.ENDDA, unmap.MOTPR,
+unmap.WEEK1,unmap.wk1TPROG1,unmap.wk1TPROG2,unmap.wk1TPROG3,unmap.wk1TPROG4,unmap.wk1TPROG5,unmap.wk1TPROG6,unmap.wk1TPROG7,
+unmap.wk1MONSOBEG, unmap.wk1MONSOEND, unmap.wk1MONSOLLZ,
+unmap.wk1TUESOBEG, unmap.wk1TUESOEND, unmap.wk1TUESOLLZ,
+unmap.wk1WEDSOBEG, unmap.wk1WEDSOEND, unmap.wk1WEDSOLLZ,
+unmap.wk1THUSOBEG, unmap.wk1THUSOEND, unmap.wk1THUSOLLZ,
+unmap.wk1FRISOBEG, unmap.wk1FRISOEND, unmap.wk1FRISOLLZ,
+unmap.wk1SATSOBEG, unmap.wk1SATSOEND, unmap.wk1SATSOLLZ,
+unmap.wk1SUNSOBEG, unmap.wk1SUNSOEND, unmap.wk1SUNSOLLZ,
+unmap.WEEK2,unmap.wk2TPROG1,unmap.wk2TPROG2,unmap.wk2TPROG3,unmap.wk2TPROG4,unmap.wk2TPROG5,unmap.wk2TPROG6,unmap.wk2TPROG7,
+unmap.wk2MONSOBEG, unmap.wk2MONSOEND, unmap.wk2MONSOLLZ,
+unmap.wk2TUESOBEG, unmap.wk2TUESOEND, unmap.wk2TUESOLLZ,
+unmap.wk2WEDSOBEG, unmap.wk2WEDSOEND, unmap.wk2WEDSOLLZ,
+unmap.wk2THUSOBEG, unmap.wk2THUSOEND, unmap.wk2THUSOLLZ,
+unmap.wk2FRISOBEG, unmap.wk2FRISOEND, unmap.wk2FRISOLLZ,
+unmap.wk2SATSOBEG, unmap.wk2SATSOEND, unmap.wk2SATSOLLZ,
+unmap.wk2SUNSOBEG, unmap.wk2SUNSOEND, unmap.wk2SUNSOLLZ,
+unmap.flag, unmap.weekendflag, unmap.morningflag, unmap.eveningflag, unmap.key1, unmap.key2
+order by unmap.PERNR;
+
+
+select distinct PERNR, SCHKZ, BZPKT, OFFBZ, 
+WEEK1, wk1TPROG1, wk1TPROG2, wk1TPROG3, wk1TPROG4, wk1TPROG5, wk1TPROG6, wk1TPROG7, 
+wk1MONSOBEG, wk1MONSOEND, wk1MONSOLLZ,
+wk1TUESOBEG, wk1TUESOEND, wk1TUESOLLZ,
+wk1WEDSOBEG, wk1WEDSOEND, wk1WEDSOLLZ,
+wk1THUSOBEG, wk1THUSOEND, wk1THUSOLLZ,
+wk1FRISOBEG, wk1FRISOEND, wk1FRISOLLZ,
+wk1SATSOBEG, wk1SATSOEND, wk1SATSOLLZ,
+wk1SUNSOBEG, wk1SUNSOEND, wk1SUNSOLLZ,
+WEEK2, wk2TPROG1, wk2TPROG2, wk2TPROG3, wk2TPROG4, wk2TPROG5, wk2TPROG6, wk2TPROG7,
+wk2MONSOBEG, wk2MONSOEND, wk2MONSOLLZ,
+wk2TUESOBEG, wk2TUESOEND, wk2TUESOLLZ,
+wk2WEDSOBEG, wk2WEDSOEND, wk2WEDSOLLZ,
+wk2THUSOBEG, wk2THUSOEND, wk2THUSOLLZ,
+wk2FRISOBEG, wk2FRISOEND, wk2FRISOLLZ,
+wk2SATSOBEG, wk2SATSOEND, wk2SATSOLLZ,
+wk2SUNSOBEG, wk2SUNSOEND, wk2SUNSOLLZ,
+adpwk1tprog1, adpwk1tprog2, adpwk1tprog3, adpwk1tprog4, adpwk1tprog5, adpwk1tprog6, adpwk1tprog7,
+adpwk2tprog1, adpwk2tprog2, adpwk2tprog3, adpwk2tprog4, adpwk2tprog5, adpwk2tprog6, adpwk2tprog7, flag,
+case when weekendflag='Y' then 'Weekend Shift'
+	when morningflag='Y' then 'Morning Shift'
+	when eveningflag='Y' then 'Evening Shift'
+	when weekendflag='Y' and morningflag='Y' and eveningflag='N' then 'Weekend-Morning Shift'
+	when weekendflag='N' and morningflag='Y' and eveningflag='Y' then 'Morning-Evening Shift'
+	when weekendflag='Y' and morningflag='N' and eveningflag='Y' then 'Weekend-Evening Shift'
+	when weekendflag='Y' and morningflag='Y' and eveningflag='Y' then 'Weekend-Morning-Evening Shift'
+	when weekendflag='N' and morningflag='N' and eveningflag='N' then 'Normal'
+	when weekendflag is null and morningflag is null and eveningflag is null then NULL
+	end as Exception
+into #UNMAPPED4
+from #UNMAPPED3 order by PERNR
+
+--select * from #UNMAPPED4
+
+--separating week1 - 73 records
+select PERNR, SCHKZ, BZPKT, OFFBZ, 
+WEEK1, wk1TPROG1, wk1TPROG2, wk1TPROG3, wk1TPROG4, wk1TPROG5, wk1TPROG6, wk1TPROG7, 
+wk1MONSOBEG, wk1MONSOEND, wk1MONSOLLZ,
+wk1TUESOBEG, wk1TUESOEND, wk1TUESOLLZ,
+wk1WEDSOBEG, wk1WEDSOEND, wk1WEDSOLLZ,
+wk1THUSOBEG, wk1THUSOEND, wk1THUSOLLZ,
+wk1FRISOBEG, wk1FRISOEND, wk1FRISOLLZ,
+wk1SATSOBEG, wk1SATSOEND, wk1SATSOLLZ,
+wk1SUNSOBEG, wk1SUNSOEND, wk1SUNSOLLZ,
+adpwk1tprog1, adpwk1tprog2, adpwk1tprog3, adpwk1tprog4, adpwk1tprog5, adpwk1tprog6, adpwk1tprog7,
+flag, Exception,
+(case when adpwk1tprog1 is not null then 1 else 0 end+
+case when adpwk1tprog2 is not null then 1 else 0 end+
+case when adpwk1tprog3 is not null then 1 else 0 end+
+case when adpwk1tprog4 is not null then 1 else 0 end+
+case when adpwk1tprog5 is not null then 1 else 0 end+
+case when adpwk1tprog6 is not null then 1 else 0 end+
+case when adpwk1tprog7 is not null then 1 else 0 end) as NumDaysMappedWeek1,
+concat((case when adpwk1tprog1 is null then 'adpwk1tprog1  ' else null end),
+(case when adpwk1tprog2 is null then 'adpwk1tprog2  ' else null end),
+(case when adpwk1tprog3 is null then 'adpwk1tprog3  ' else null end),
+(case when adpwk1tprog4 is null then 'adpwk1tprog4  ' else null end),
+(case when adpwk1tprog5 is null then 'adpwk1tprog5  ' else null end),
+(case when adpwk1tprog6 is null then 'adpwk1tprog6  ' else null end),
+(case when adpwk1tprog7 is null then 'adpwk1tprog7  ' else null end)) as DaysNotMappedWeek1
+into #UNMAPPED4_WEEK1
+from #UNMAPPED4
+where WEEK1=1 and WEEK2 is null
+
+
+--select * from #UNMAPPED4_WEEK1
+
+--separating week2 - 58 records
+select PERNR, SCHKZ, BZPKT, OFFBZ, 
+WEEK1, wk1TPROG1, wk1TPROG2, wk1TPROG3, wk1TPROG4, wk1TPROG5, wk1TPROG6, wk1TPROG7, 
+wk1MONSOBEG, wk1MONSOEND, wk1MONSOLLZ,
+wk1TUESOBEG, wk1TUESOEND, wk1TUESOLLZ,
+wk1WEDSOBEG, wk1WEDSOEND, wk1WEDSOLLZ,
+wk1THUSOBEG, wk1THUSOEND, wk1THUSOLLZ,
+wk1FRISOBEG, wk1FRISOEND, wk1FRISOLLZ,
+wk1SATSOBEG, wk1SATSOEND, wk1SATSOLLZ,
+wk1SUNSOBEG, wk1SUNSOEND, wk1SUNSOLLZ,
+WEEK2, wk2TPROG1, wk2TPROG2, wk2TPROG3, wk2TPROG4, wk2TPROG5, wk2TPROG6, wk2TPROG7,
+wk2MONSOBEG, wk2MONSOEND, wk2MONSOLLZ,
+wk2TUESOBEG, wk2TUESOEND, wk2TUESOLLZ,
+wk2WEDSOBEG, wk2WEDSOEND, wk2WEDSOLLZ,
+wk2THUSOBEG, wk2THUSOEND, wk2THUSOLLZ,
+wk2FRISOBEG, wk2FRISOEND, wk2FRISOLLZ,
+wk2SATSOBEG, wk2SATSOEND, wk2SATSOLLZ,
+wk2SUNSOBEG, wk2SUNSOEND, wk2SUNSOLLZ,
+adpwk1tprog1, adpwk1tprog2, adpwk1tprog3, adpwk1tprog4, adpwk1tprog5, adpwk1tprog6, adpwk1tprog7,
+adpwk2tprog1, adpwk2tprog2, adpwk2tprog3, adpwk2tprog4, adpwk2tprog5, adpwk2tprog6, adpwk2tprog7,
+flag, Exception,
+(case when adpwk1tprog1 is not null then 1 else 0 end+
+case when adpwk1tprog2 is not null then 1 else 0 end+
+case when adpwk1tprog3 is not null then 1 else 0 end+
+case when adpwk1tprog4 is not null then 1 else 0 end+
+case when adpwk1tprog5 is not null then 1 else 0 end+
+case when adpwk1tprog6 is not null then 1 else 0 end+
+case when adpwk1tprog7 is not null then 1 else 0 end) as NumDaysMappedWeek1,
+concat((case when adpwk1tprog1 is null then 'adpwk1tprog1  ' else null end),
+(case when adpwk1tprog2 is null then 'adpwk1tprog2  ' else null end),
+(case when adpwk1tprog3 is null then 'adpwk1tprog3  ' else null end),
+(case when adpwk1tprog4 is null then 'adpwk1tprog4  ' else null end),
+(case when adpwk1tprog5 is null then 'adpwk1tprog5  ' else null end),
+(case when adpwk1tprog6 is null then 'adpwk1tprog6  ' else null end),
+(case when adpwk1tprog7 is null then 'adpwk1tprog7  ' else null end)) as DaysNotMappedWeek1,
+(case when adpwk2tprog1 is not null then 1 else 0 end+
+case when adpwk2tprog2 is not null then 1 else 0 end+
+case when adpwk2tprog3 is not null then 1 else 0 end+
+case when adpwk2tprog4 is not null then 1 else 0 end+
+case when adpwk2tprog5 is not null then 1 else 0 end+
+case when adpwk2tprog6 is not null then 1 else 0 end+
+case when adpwk2tprog7 is not null then 1 else 0 end) as NumDaysMappedWeek2,
+concat((case when adpwk2tprog1 is null then 'adpwk1tprog1  ' else null end),
+(case when adpwk2tprog2 is null then 'adpwk2tprog2  ' else null end),
+(case when adpwk2tprog3 is null then 'adpwk2tprog3  ' else null end),
+(case when adpwk2tprog4 is null then 'adpwk2tprog4  ' else null end),
+(case when adpwk2tprog5 is null then 'adpwk2tprog5  ' else null end),
+(case when adpwk2tprog6 is null then 'adpwk2tprog6  ' else null end),
+(case when adpwk2tprog7 is null then 'adpwk2tprog7  ' else null end)) as DaysNotMappedWeek2     
+into #UNMAPPED4_WEEK2
+from #UNMAPPED4
+where WEEK1=1 and WEEK2=2
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+drop table #workschedules1, #workschedules2, #workschedules3, #empsched1, #empsched2, 
+#workschedules1ADP, #workschedules2adp, #workschedules3adp, 
+#ADPT550A, #SAPT550A, #TPROGMAPPED1, #TPROGMAPPED2,
+#MAPPED1, #UNMAPPED1, #UNMAPPED2, #UNMAPPED3, #UNMAPPED4, #UNMAPPED4_WEEK1, #UNMAPPED4_WEEK2
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
  
 
