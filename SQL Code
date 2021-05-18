@@ -1,0 +1,6 @@
+Demonstrates Truncating, Inserting, Joins, Partitions, and Updating
+
+--Truncate table PPI_CANVAS_ENROLLMENT;
+truncate table SAPBodsPi_ProfRep_Prod.HR_Data_DC2.PPI_CANVAS_ENROLLMENT;
+ 
+
